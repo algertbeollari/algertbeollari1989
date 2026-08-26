@@ -25,5 +25,13 @@ const missing = await client.callTool({
 console.log("\nask_claude with no key (expect graceful error):");
 console.log(JSON.stringify(missing, null, 2));
 
+const combo = await client.callTool({
+  name: "omniroute",
+  arguments: { prompt: "hi" },
+});
+console.log("\nomniroute with no keys configured (expect all FAILED, combo skipped):");
+console.log(combo.content[0].text);
+console.log("isError:", combo.isError);
+
 await client.close();
 process.exit(0);

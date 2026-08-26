@@ -12,6 +12,15 @@ gains the same seven tools:
 - `ask_deepseek`
 - `ask_ollama`
 - `ask_copilot`
+- `omniroute` — **the combo tool.** Fans one prompt out to every connected
+  provider in parallel and synthesizes a single reconciled combo answer from
+  whichever responses succeeded (plus every individual answer, for
+  comparison). Use this instead of picking one `ask_*` tool when you want a
+  cross-model second opinion or one merged best answer.
+  - `providers`: optional subset, e.g. `["claude", "codex"]` — defaults to all.
+  - `combine`: set `false` to skip synthesis and just get the raw fan-out.
+  - `synthesizer`: which provider writes the combo answer (default: first
+    successful provider in `claude → codex → gemini → deepseek → copilot → ollama` order).
 - `list_connectors` — reports which providers are configured/reachable
 
 > **Why an "ask_copilot" bridge?** GitHub Copilot has no public chat-completions

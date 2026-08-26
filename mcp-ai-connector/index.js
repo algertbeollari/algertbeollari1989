@@ -199,6 +199,39 @@ function isConfigured(name) {
   return !provider.envKey || Boolean(apiKey);
 }
 
+/** Calls one provider, always resolving (never throws) with a uniform result shape. */
+async function callProvider(name, { prompt, system, model }) {
+  const provider = PROVIDERS[name];
+  const { apiKey, baseUrl } = resolveConfig(name);
+  if (provider.envKey && !apiKey) {
+    return {
+      name,
+      label: provider.label,
+      ok: false,
+      error: `NOT CONFIGURED — set ${provider.envKey} and restart the MCP server`,
+    };
+  }
+  const started = Date.now();
+  try {
+    const text = await provider.call({
+      apiKey,
+      baseUrl,
+      model: model || provider.defaultModel,
+      prompt,
+      system,
+    });
+    return { name, label: provider.label, ok: true, text, ms: Date.now() - started };
+  } catch (err) {
+    return {
+      name,
+      label: provider.label,
+      ok: false,
+      error: err.message,
+      ms: Date.now() - started,
+    };
+  }
+}
+
 for (const [name, provider] of Object.entries(PROVIDERS)) {
   server.registerTool(
     `ask_${name}`,
@@ -220,38 +253,98 @@ for (const [name, provider] of Object.entries(PROVIDERS)) {
       },
     },
     async ({ prompt, system, model }) => {
-      const { apiKey, baseUrl } = resolveConfig(name);
-      if (provider.envKey && !apiKey) {
+      const result = await callProvider(name, { prompt, system, model });
+      if (!result.ok) {
         return {
           isError: true,
-          content: [
-            {
-              type: "text",
-              text: `${provider.label} is not configured: set the ${provider.envKey} environment variable and restart the MCP server.`,
-            },
-          ],
+          content: [{ type: "text", text: `${provider.label}: ${result.error}` }],
         };
       }
-      try {
-        const text = await provider.call({
-          apiKey,
-          baseUrl,
-          model: model || provider.defaultModel,
-          prompt,
-          system,
-        });
-        return { content: [{ type: "text", text }] };
-      } catch (err) {
-        return {
-          isError: true,
-          content: [
-            { type: "text", text: `${provider.label} request failed: ${err.message}` },
-          ],
-        };
-      }
+      return { content: [{ type: "text", text: result.text }] };
     }
   );
 }
+
+// Preference order used to auto-pick a synthesizer for omniroute's combo answer.
+const SYNTHESIS_PREFERENCE = ["claude", "codex", "gemini", "deepseek", "copilot", "ollama"];
+
+server.registerTool(
+  "omniroute",
+  {
+    title: "OmniRoute — fan out to every connected model and combine",
+    description:
+      "The combo tool: sends one prompt to every connected provider (Claude, Codex, " +
+      "Gemini, DeepSeek, Ollama, Copilot bridge) in parallel, then synthesizes a " +
+      "single reconciled combo answer from whichever responses succeeded. Use this " +
+      "instead of calling ask_* one at a time when you want a cross-model second " +
+      "opinion or one merged best answer instead of picking a provider yourself.",
+    inputSchema: {
+      prompt: z.string().describe("The prompt to send to every provider."),
+      system: z.string().optional().describe("Optional shared system prompt."),
+      providers: z
+        .array(z.enum(Object.keys(PROVIDERS)))
+        .optional()
+        .describe(
+          "Subset of providers to route to, e.g. [\"claude\",\"codex\"]. Defaults to all of them."
+        ),
+      combine: z
+        .boolean()
+        .optional()
+        .describe("Also synthesize a single combo answer from the individual responses. Default true."),
+      synthesizer: z
+        .enum(Object.keys(PROVIDERS))
+        .optional()
+        .describe(
+          "Which provider writes the combo answer. Defaults to the first successful " +
+            `provider in preference order (${SYNTHESIS_PREFERENCE.join(", ")}).`
+        ),
+    },
+  },
+  async ({ prompt, system, providers, combine = true, synthesizer }) => {
+    const targets = providers && providers.length ? providers : Object.keys(PROVIDERS);
+    const results = await Promise.all(
+      targets.map((name) => callProvider(name, { prompt, system }))
+    );
+
+    const succeeded = results.filter((r) => r.ok);
+    const sections = results.map((r) =>
+      r.ok
+        ? `### ${r.name} (${r.label}, ${r.ms}ms)\n${r.text}`
+        : `### ${r.name} (${r.label})\nFAILED — ${r.error}`
+    );
+
+    let comboSection = "";
+    if (combine && succeeded.length > 0) {
+      const chosenName =
+        (synthesizer && succeeded.find((r) => r.name === synthesizer)?.name) ||
+        SYNTHESIS_PREFERENCE.find((name) => succeeded.some((r) => r.name === name)) ||
+        succeeded[0].name;
+
+      const synthesisPrompt =
+        `Multiple AI models were asked the same question. Combine their answers into ` +
+        `one best, reconciled response. Call out any meaningful disagreement instead of ` +
+        `silently picking one side.\n\nQuestion:\n${prompt}\n\nAnswers:\n` +
+        succeeded.map((r) => `--- ${r.name} ---\n${r.text}`).join("\n\n");
+
+      const combo = await callProvider(chosenName, {
+        prompt: synthesisPrompt,
+        system: "You are an impartial synthesizer reconciling answers from several AI models.",
+      });
+
+      comboSection = combo.ok
+        ? `## Combo answer (via ${chosenName})\n${combo.text}\n\n`
+        : `## Combo answer\nSynthesis via ${chosenName} failed — ${combo.error}\n\n`;
+    } else if (combine) {
+      comboSection = "## Combo answer\nNo provider succeeded, nothing to combine.\n\n";
+    }
+
+    const text = `${comboSection}## Individual answers\n${sections.join("\n\n")}`;
+    return {
+      isError: succeeded.length === 0,
+      content: [{ type: "text", text }],
+    };
+  }
+);
 
 server.registerTool(
   "list_connectors",
