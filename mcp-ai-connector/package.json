@@ -1,0 +1,28 @@
+{
+  "name": "mcp-ai-connector",
+  "version": "1.0.0",
+  "description": "MCP server that bridges Claude / Claude Code to Codex (OpenAI), Gemini, DeepSeek, Ollama and GitHub Models (Copilot) as callable tools.",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "mcp-ai-connector": "index.js"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "mcp",
+    "claude",
+    "codex",
+    "gemini",
+    "deepseek",
+    "ollama",
+    "copilot"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  }
+}

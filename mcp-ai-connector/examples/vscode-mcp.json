@@ -1,0 +1,18 @@
+{
+  "_comment": "Save as .vscode/mcp.json so GitHub Copilot Chat (VS Code) can also call Claude, Codex, Gemini, DeepSeek and Ollama. VS Code will prompt for any ${input:...} secrets on first use.",
+  "servers": {
+    "ai-connector": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["mcp-ai-connector/index.js"],
+      "env": {
+        "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}",
+        "OPENAI_API_KEY": "${env:OPENAI_API_KEY}",
+        "GEMINI_API_KEY": "${env:GEMINI_API_KEY}",
+        "DEEPSEEK_API_KEY": "${env:DEEPSEEK_API_KEY}",
+        "GITHUB_TOKEN": "${env:GITHUB_TOKEN}",
+        "OLLAMA_HOST": "http://localhost:11434"
+      }
+    }
+  }
+}

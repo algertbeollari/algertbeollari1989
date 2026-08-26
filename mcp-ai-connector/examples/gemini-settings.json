@@ -1,0 +1,17 @@
+{
+  "_comment": "Merge into ~/.gemini/settings.json (or a project .gemini/settings.json) so Gemini CLI can also call Claude, Codex, DeepSeek, Ollama and the Copilot bridge.",
+  "mcpServers": {
+    "ai-connector": {
+      "command": "node",
+      "args": ["mcp-ai-connector/index.js"],
+      "env": {
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+        "DEEPSEEK_API_KEY": "${DEEPSEEK_API_KEY}",
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+        "OLLAMA_HOST": "http://localhost:11434"
+      }
+    }
+  }
+}

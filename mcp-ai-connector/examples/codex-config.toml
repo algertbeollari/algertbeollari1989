@@ -1,0 +1,14 @@
+# Snippet to merge into ~/.codex/config.toml (OpenAI Codex CLI)
+# so Codex can also call Claude, Gemini, DeepSeek, Ollama and the Copilot bridge.
+
+[mcp_servers.ai-connector]
+command = "node"
+args = ["mcp-ai-connector/index.js"]
+
+[mcp_servers.ai-connector.env]
+ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY}"
+OPENAI_API_KEY = "${OPENAI_API_KEY}"
+GEMINI_API_KEY = "${GEMINI_API_KEY}"
+DEEPSEEK_API_KEY = "${DEEPSEEK_API_KEY}"
+GITHUB_TOKEN = "${GITHUB_TOKEN}"
+OLLAMA_HOST = "http://localhost:11434"

@@ -70,6 +70,12 @@ Video Guide: ```https://youtu.be/uOf_wH6jSEE``` <br /><br />
 </p>
 
 
+# AI Connector (MCP)
+This repo also ships [`mcp-ai-connector`](mcp-ai-connector/), an MCP server that
+connects Claude, Claude Code, Codex/ChatGPT, Gemini, DeepSeek, Ollama and
+GitHub Copilot together as callable tools. See
+[`mcp-ai-connector/README.md`](mcp-ai-connector/README.md) for setup.
+
 # Remember
 Most of its setting took affect globally in windows but few setting only affect the current user (like debloating, dark/light mode, startmenu tiles cleanup, deleting temp files etc), it's recommended to use it seperately on other local user account. <br /> <br />
 After windows Feature update, most of the bloatware gets reinstalled and some of the setting get restored. To outcome this, use windows toolbox again.
